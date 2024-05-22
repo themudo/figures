@@ -32,9 +32,9 @@ library(ggtreeExtra)
 ```
 
 ```{r}
-treefile <- "./mrbayes/mito_nuc_mar2022_outFcatus.con.tre"
+treefile <- "~/Paula/tropicalis/mrbayes/mito_nuc_mar2022_outFcatus.con.tre"
 mrbayes <- read.mrbayes(treefile)
-beasttree <- "./beast/monk_mito12_nuc_29_072023_beast-tree_2.tre"
+beasttree <- "~/Paula/tropicalis/beast/monk_mito12_nuc_29_072023_beast-tree_2.tre"
 beast <- read.beast(beasttree)
 # beast2 <- beast
 # beast2@phylo <- bind.tip(beast@phylo, "AY729880", where=52, position= 0, edge.length = 28.81)
@@ -248,6 +248,7 @@ p2 +
 clades <- data.frame(
   node = c(56, 54, 57, 34, 38, 48, 52),
   node2 = c(56, 53, 57, 50, 41, 35, 39),
+  node3 = c(39, 41, 40, 43, 46, 31, 55),
   name = c(
     "Vulpes lagopes",
     "Mustela nivalis",
@@ -326,7 +327,7 @@ p3 <- p2 %<+% cal +
 
 p3
 
-ggsave(filename = "Figure 2b Beast mito plus nuc.pdf", plot= p3)
+#ggsave(filename = "Figure 2b Beast mito plus nuc.pdf", plot= p3)
 ```
 
 ##Topology comparison Beast vs. MrBayes
@@ -371,9 +372,19 @@ pp + geom_nodelab()
 
 ```{r}
 #treefile2 <- "./arvoreMrBayesfinalmito_concat_mar2022.con (1).tre"
-treefile2 <- "./mrbayes/mito_concat_mar2022.con.tre"
+#treefile2 <- "~/Paula/tropicalis/mrbayes/mito_concat_mar2022.con.tre"
+treefile2 <- "~/Paula/tropicalis/mrbayes/mito_concat_mar2022.con_reroot.tre"
 #treefile3 <- "./mrbayes/mitogenomes_mar2022.con.tre"
 mb_mito <- read.mrbayes(treefile2)
+
+#Adding bootstrap values from ML tree (iqtree)
+#ml_treetext <- "(Mirounga_angustirostris:0.0950051004,((((((Vulpes_lagopus:0.1698370417,Canis_lupus:0.1637146685)100:0.2257377725,(Felis_catus:0.0874379457,Lynx_canadensis:0.0657714029)100:0.2528154522)100:0.0574326392,(Meles_meles:0.1607905433,(Mustela_nivalis:0.1630020925,Enhydra_lutris:0.1520079860)100:0.0354896852)100:0.1479903046)100:0.0869840820,(Odobenus_rosmarus:0.2426405344,(Eumetopias_jubatus:0.0500816626,(Arctocephalus_australis:0.0104071989,Arctocephalus_forsteri:0.0153496640)100:0.0487144977)100:0.1017039901)100:0.0665265203)100:0.0402776710,(Erignathus_barbatus:0.0904496688,(Cystophora_cristata:0.0672677368,(((Phoca_largha:0.0094308226,Phoca_vitulina_concolor:0.0125739437)100:0.0095892521,(Pusa_hispida:0.0177235857,((Pusa_caspica:0.0144201692,Halichoerus_grypus:0.0185357404)50:0.0012088186,Pusa_sibirica:0.0121348956)40:0.0009066670)53:0.0033693733)100:0.0351673228,(Phoca_fasciata:0.0406634155,Phoca_groenlandica:0.0459846901)100:0.0159467900)100:0.0144077219)100:0.0384892372)100:0.0206275213)100:0.0282193942,((Neomonachus_schauinslandi:0.0439796217,tropicalis:0.0531241257)100:0.0489902430,Monachus_monachus:0.0919153186)98:0.0090438389)100:0.0118337060,((Lobodon_carcinophaga:0.0492640818,(Hydrurga_leptonyx:0.0356999913,Leptonychotes_weddellii:0.0295103134)100:0.0190389793)74:0.0035630726,Ommatophoca_rossii:0.0585437965)100:0.0144130993);" 
+
+#ml_tree <- read.nhx(textConnection(ml_treetext))
+#bs <-
+#merged_tree <- merge_tree(mb_mito, ml_tree)
+
+#mb_mito <- merged_tree
 
 #Replacing the tip labels with names with spaces and updated taxonomy
 mb_tips <- mb_mito@phylo$tip.label
@@ -382,24 +393,27 @@ t3 <- data.frame(mb_tips, mb_tips2)
 
 ggtree(mb_mito) + geom_text(aes(label=node), hjust=-.3) + geom_tiplab(align = TRUE, offset = 0.1) + xlim(NA, 1)
 #mb_mito3 <- read.mrbayes(treefile3)
-mb_mito@phylo <- reroot(mb_mito@phylo, 38)
+#mb_mito@phylo <- reroot(mb_mito@phylo, 38) #This function incorrectly assigns node labels after rerooting
+mb_mito@phylo <- root(mb_mito@phylo, node = 38, edgelabel = TRUE) #This function correctly assigns node labels
 ggtree(mb_mito) + geom_text(aes(label=node), hjust=-.3) + geom_tiplab(align = TRUE)
-
+ggtree(mb_mito) + geom_text(aes(label=round(as.numeric(prob), 2)), hjust=-.3)
 #Uses t3 to replace "_" with " " and update species names in tip labels
 
 p_mito <- ggtree(mb_mito, size = 1) %<+% t3 + theme_tree() + geom_tiplab(aes(label = mb_tips2), align = TRUE, offset = 0.01, size = 3)
-p_mito <- flip(p_mito, 57, 56)
-
+#p_mito <- flip(p_mito, 57, 56)
+p_mito + geom_text(aes(label=round(as.numeric(prob), 2)), hjust=-.3)
 
 p_mito_publish <- p_mito + xlim(NA, 1.5) + ylim(-1, NA) + geom_treescale(y = -1, fontsize = 2, linesize = 1, width = 0.1) + theme_tree() + geom_text2(aes(label=round(as.numeric(prob), 2),
                                                  subset=as.numeric(prob)< 1, 
-                                                 x=branch), vjust=-1.0, size=2) + 
-  geom_cladelab(data = clades, mapping = aes(node = node2, label= taxa, image = uuid_clade, color = taxa), geom = "phylopic", fontsize = 8, align = TRUE, show.legend = FALSE, offset = 0.6, offset.text = 0.1, barsize = 2) +
+                                                 x=branch), vjust=0.5, hjust=1.3, size=2) + 
+  geom_cladelab(data = clades, mapping = aes(node = node3, label= taxa, image = uuid_clade, color = taxa), geom = "phylopic", fontsize = 8, align = TRUE, show.legend = FALSE, offset = 0.5, offset.text = 0.1, barsize = 2) +
   scale_color_manual(values = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D"), breaks = c('Felidae', 'Canidae', 'Mustelidae', 'Otariidae +\nOdobenidae', 'Phocinae', 'Lobodontini+\nMirongini', 'Monochini'))
   #scale_color_brewer(type= 'qual', palette = "Dark2", breaks=c('Felidae', 'Canidae', 'Mustelidae', 'Otariidae +\nOdobenidae', 'Phocinae', 'Lobodontini+\nMirongini', 'Monochini')) 
 #ggtree(mb_mito3) + theme_tree() + geom_tiplab(align = TRUE, size = 3)
 
 p_mito_publish
+
+
 
 ggsave(filename = "Figure 2a MrBayes mitogenomes.pdf", p_mito_publish)
 ```
